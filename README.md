@@ -8,6 +8,7 @@ OQS-OpenSSL\_1\_1\_1
 OQS-OpenSSL\_1\_1\_1 is a fork of OpenSSL 1.1.1 that adds quantum-safe key exchange and authentication algorithms using [liboqs](https://github.com/open-quantum-safe/liboqs) for prototyping and evaluation purposes. This fork is not endorsed by the OpenSSL project.
 
 - [Overview](#overview)
+- [A note on QUIC protocol support](#quic)
 - [Status](#status)
   * [Limitations and Security](#limitations-and-security)
   * [Supported Algorithms](#supported-algorithms)
@@ -37,9 +38,37 @@ Both liboqs and this fork are part of the **Open Quantum Safe (OQS) project**, w
 
 Note that, referencing the terminology defined by [ETSI](https://www.etsi.org/technologies/quantum-safe-cryptography) and [CSA](https://downloads.cloudsecurityalliance.org/assets/research/quantum-safe-security/applied-quantum-safe-security.pdf), the terms "post-quantum cryptography" (PQC), "quantum-safe cryptography" (QSC) and "quantum-resistant cryptography" (QRC) all refer to the same class of cryptographic algorithms that is made available for use via this fork.
 
+## A note on QUIC protocol support
+
+I've added support for the QUIC protocol using the OpenSSL 1.1.1m+quic branch of the quictls project by Microsoft and Akamai (see https://github.com/quictls/openssl/tree/OpenSSL_1_1_1m+quic). The notes below are from their README.
+
+This fork adds API's that can be used by QUIC implementations for connection
+handshakes. Quoting the IETF Working group
+[charter](https://datatracker.ietf.org/wg/quic/about/), QUIC is a "UDP-based,
+stream-multiplexing, encrypted transport protocol." If you don't need QUIC, you
+should use the official OpenSSL distributions.
+
+The API's here are used by Microsoft's
+[MsQuic](https://github.com/microsoft/msquic) and Google's
+[Chromium QUIC](https://chromium.googlesource.com/chromium/src/+/master/net/quic/)
+
+What about library names?
+-------------------------
+Library names will be the same, but will use a different version number. The version
+numbers for the current OpenSSL libraries are `1.1` (for the 1.1.0 and 1.1.1 branches)
+and `3` (for the to-be-3.0 branch). We will be prefixing 81 (ASCII for 'Q') to
+the version numbers to generate a unique version number.
+
+```
+libcrypto.so.81.3   libcrypto.so.81.1.1   libcrypto.so.1.1   libcrypto.so.3
+libssl.so.81.3      libssl.so.81.1.1      libsslo.so.1.1     libssl.so.3
+```
+The SONAME of these libraries are all different, guaranteeing the correct library
+will be used.
+
 ## Status
 
-This fork is currently in sync with the [OpenSSL\_1\_1\_1k tag](https://github.com/openssl/openssl/tree/OpenSSL_1_1_1k), and adds the following:
+This fork is currently in sync with the [OpenSSL\_1\_1\_1m tag](https://github.com/openssl/openssl/tree/OpenSSL_1_1_1m), and adds the following:
 
 - quantum-safe key exchange in TLS 1.3
 - hybrid (quantum-safe + elliptic curve) key exchange in TLS 1.3
