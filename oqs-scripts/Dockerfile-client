@@ -1,0 +1,24 @@
+FROM ubuntu:focal
+
+ENV TZ=Europe/Zurich
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update && apt install software-properties-common apt-utils -y
+RUN apt-add-repository ppa:lttng/stable-2.12 -y && apt update && apt full-upgrade -y 
+RUN apt install build-essential git mercurial cmake gcc libtool libssl-dev make ninja-build unzip xsltproc doxygen python3-yaml libpcre3-dev libpcre3 zlib1g-dev locate net-tools wget liblttng-ust-dev lttng-tools -y
+
+WORKDIR /opt
+RUN git clone --depth 1 --branch main https://github.com/open-quantum-safe/liboqs.git && git clone --depth 1 --branch main https://github.com/igorbarshteyn/oqs-openssl-quic.git && git clone https://github.com/microsoft/msquic.git && cd msquic && git submodule update --init --recursive 
+
+# can we already change OSSL-quic for OQS-OSSL-quic? Need to set the proper commit... (wants 7c0006ccf891c20cd0b1e9e6a436f9d1f3153b7b)
+#RUN git clone --depth 1 --branch main https://github.com/open-quantum-safe/liboqs.git && git clone --depth 1 --branch main https://github.com/igorbarshteyn/oqs-openssl-quic.git && git clone https://github.com/microsoft/msquic.git && cd msquic && sed -i "s/quictls\/openssl/igorbarshteyn\/oqs-openssl-quic/g" .gitmodules && sed -i "s/OpenSSL_1_1_1m+quic/main/g" .gitmodules && git submodule update --init --recursive 
+
+WORKDIR /opt
+RUN cd liboqs && mkdir build && cd build && cmake -GNinja -DCMAKE_INSTALL_PREFIX=/opt/oqs-openssl-quic/oqs .. && ninja && ninja install
+
+WORKDIR /opt
+RUN cd oqs-openssl-quic && ./Configure '-Wl,--enable-new-dtags,-rpath,$(LIBRPATH)' no-shared linux-x86_64 -DOQS_DEFAULT_GROUPS=\"bikel1:bikel3:kyber512:kyber768:kyber1024:kyber90s512:kyber90s768:kyber90s1024:frodo640aes:frodo640shake:frodo976aes:frodo976shake:frodo1344aes:frodo1344shake:hqc128:hqc192:hqc256:ntru_hps2048509:ntru_hps2048677:ntru_hps4096821:ntru_hps40961229:ntru_hrss701:ntru_hrss1373:ntrulpr653:ntrulpr761:ntrulpr857:ntrulpr1277:sntrup653:sntrup761:sntrup857:sntrup1277:lightsaber:saber:firesaber:sidhp434:sidhp503:sidhp610:sidhp751:sikep434:sikep503:sikep610:sikep751:p256_bikel1:p384_bikel3:p256_kyber512:p384_kyber768:p521_kyber1024:p256_kyber90s512:p384_kyber90s768:p521_kyber90s1024:p256_frodo640aes:p256_frodo640shake:p384_frodo976aes:p384_frodo976shake:p521_frodo1344aes:p521_frodo1344shake:p256_hqc128:p384_hqc192:p521_hqc256:p256_ntrulpr653:p256_ntrulpr761:p384_ntrulpr857:p521_ntrulpr1277:p256_sntrup653:p256_sntrup761:p384_sntrup857:p521_sntrup1277:p256_ntru_hps2048509:p384_ntru_hps2048677:p521_ntru_hps40961229:p521_ntru_hps4096821:p384_ntru_hrss701:p521_ntru_hrss1373:p256_lightsaber:p384_saber:p521_firesaber:p256_sidhp434:p256_sidhp503:p384_sidhp610:p521_sidhp751:p256_sikep434:p256_sikep503:p384_sikep610:p521_sikep751\" -lm && make -j 2 && make install_sw
+
+WORKDIR /opt
+RUN cd msquic && mkdir build && cd build && cmake -G 'Unix Makefiles' .. && cmake --build .
+
